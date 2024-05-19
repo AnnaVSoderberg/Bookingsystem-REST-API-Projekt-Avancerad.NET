@@ -1,0 +1,6 @@
+@Bookingsystem_REST_API_Projekt_Avancerad.NET_HostAddress = http://localhost:5051
+
+GET {{Bookingsystem_REST_API_Projekt_Avancerad.NET_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
