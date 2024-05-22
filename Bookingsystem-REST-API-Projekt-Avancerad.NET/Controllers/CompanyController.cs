@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
 using Microsoft.AspNetCore.Http;
@@ -13,25 +14,40 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
     {
         private readonly IBookingSystem<Company> _bookingSystem;
         private readonly IMapper _mapper;
+        private readonly AppDbContext _appDbContext;
 
-        public CompanyController(IBookingSystem<Company> bookingSystem, IMapper mapper)
+        public CompanyController(IBookingSystem<Company> bookingSystem, IMapper mapper, AppDbContext appDbContext)
         {
             _bookingSystem = bookingSystem;
             _mapper = mapper;
+            _appDbContext = appDbContext;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllCompanies()
+        public async Task<IActionResult> GetAllCompanies(string name, string sortBy = "name")
         {
             try
             {
                 var companies = await _bookingSystem.GetAll();
-                var companyDtos = _mapper.Map<List<CompanyDto>>(companies);
-                return Ok(companyDtos);
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    companies = companies.Where(c => c.CompanyName.Contains(name));
+                }
+
+                // Sortera
+                companies = sortBy.ToLower() switch
+                {
+                    "name" => companies.OrderBy(c => c.CompanyName),
+                    _ => companies,
+                };
+
+                var companyDto = _mapper.Map<List<CompanyDto>>(companies);
+                return Ok(companyDto);
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to retrive data from database....");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error to retrieve data from the database");
             }
         }
 
@@ -42,7 +58,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             {
                 var result = await _bookingSystem.GetSingle(id);
                 if (result == null)
-                { 
+                {
                     return NotFound();
                 }
                 var companyDto = _mapper.Map<CompanyDto>(result);
@@ -55,15 +71,23 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Company>> CreateNewProduct(Company newCompany)
+        public async Task<ActionResult<CompanyDto>> CreateNewCompany(CompanyDto newCompanyDto)
         {
             try
             {
-                if(newCompany == null) 
-                return BadRequest();
+                if (newCompanyDto == null)
+                    return BadRequest();
 
+
+
+                var newCompany = _mapper.Map<Company>(newCompanyDto);
                 var createdCompany = await _bookingSystem.Add(newCompany);
-                return CreatedAtAction(nameof(GetCompany), new { id = createdCompany.CompanyId }, createdCompany);
+
+                var createdCompanyFromDb = await _bookingSystem.GetSingle(createdCompany.CompanyId);
+
+                var createdCompanyDto = _mapper.Map<CompanyDto>(createdCompanyFromDb);
+
+                return CreatedAtAction(nameof(GetCompany), new { id = createdCompany.CompanyId }, createdCompanyDto);
             }
             catch (Exception)
             {
@@ -72,30 +96,35 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
+
+
+
+        [HttpDelete("{id:int}")] //Kan inte ta bort om det finns bokade appointments lägga in "OnCascade" ?
         public async Task<ActionResult<Company>> DeleteCompany(int id)
         {
             try
             {
                 var CompanyToDelete = await _bookingSystem.GetSingle(id);
-                if(CompanyToDelete == null)
+                if (CompanyToDelete == null)
                 {
                     return NotFound($"Company with Id: {id}, was not found to delete");
                 }
                 return await _bookingSystem.Delete(id);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to delete data in the database....");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
             }
         }
 
+
+
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<Company>> UpdateCompany(int id, Company company)
+        public async Task<ActionResult<CompanyDto>> UpdateCompany(int id, CompanyDto companyDto)
         {
             try
             {
-                if(id != company.CompanyId)
+                if (id != companyDto.CompanyId)
                 {
                     return BadRequest($"Company with Id: {id}, does not match");
                 }
@@ -105,7 +134,16 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 {
                     return NotFound($"Company with Id: {id} not found in database");
                 }
-                return await _bookingSystem.Update(company);
+
+                // Map CompanyDto to Company
+                var company = _mapper.Map<Company>(companyDto);
+                var updatedCompany = await _bookingSystem.Update(company);
+
+
+                // Map updated Company to CompanyDto
+                var updatedCompanyDto = _mapper.Map<CompanyDto>(updatedCompany);
+
+                return Ok(updatedCompanyDto);
             }
             catch (Exception)
             {

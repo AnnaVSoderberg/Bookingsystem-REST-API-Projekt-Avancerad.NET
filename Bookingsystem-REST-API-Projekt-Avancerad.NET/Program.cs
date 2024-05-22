@@ -24,8 +24,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET
             builder.Services.AddScoped<IBookingSystem<Company>, CompanyRepository>();
             builder.Services.AddScoped<IBookingSystem<Appointment>, AppointmentRepository>();
             builder.Services.AddScoped<IBookingSystem<Customer>, CustomerRepository>();
-            builder.Services.AddScoped<IAppointment, AppointmentRepository>();
-            builder.Services.AddScoped<ICustomer, CustomerRepository>();
+            builder.Services.AddScoped<IHistoryAppointment, HistoryAppointmnetRepository>();
 
 
             builder.Services.AddControllers().AddJsonOptions(options =>

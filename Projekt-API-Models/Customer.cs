@@ -22,9 +22,6 @@ namespace Projekt_API_Models
         [MaxLength(20)]
         public string CustomerPhoneNumber { get; set; }
 
-        public string Login { get; set; }
-        public string Password { get; set; }
-
         //Many to One
         public ICollection<Appointment> Appointments { get; set; }
 

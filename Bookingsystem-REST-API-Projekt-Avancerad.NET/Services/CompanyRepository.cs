@@ -14,9 +14,9 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
             _appContext = appContext;
         }
 
-        public async Task<Company> Add(Company newEntity)
+        public async Task<Company> Add(Company company) //OK
         {
-            var result = await _appContext.Companies.AddAsync(newEntity);
+            var result = await _appContext.Companies.AddAsync(company);
             await _appContext.SaveChangesAsync();
             return result.Entity;
 
@@ -37,24 +37,23 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
         public async Task<IEnumerable<Company>> GetAll()
         {
-            return await _appContext.Companies.ToListAsync();
+            return await _appContext.Companies.Include(c => c.Appointments).ToListAsync(); //Lagt till "Include(c => c.Appointments)." behövs??
         }
 
         public async Task<Company> GetSingle(int id)
         {
-            return await _appContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == id);
+            return await _appContext.Companies.Include(c => c.Appointments).FirstOrDefaultAsync(c => c.CompanyId == id); ////Lagt till "Include(c => c.Appointments)." behövs??
         }
 
 
-        public async Task<Company> Update(Company entity)
+        public async Task<Company> Update(Company company) //OK
         {
-            var updateCompany = await _appContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == entity.CompanyId);
+            var updateCompany = await _appContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == company.CompanyId);
 
             if(updateCompany != null)
             {
-                updateCompany.CompanyName = entity.CompanyName;
+                updateCompany.CompanyName = company.CompanyName;
                 
-
                 await _appContext.SaveChangesAsync();
                 return updateCompany;
             }

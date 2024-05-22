@@ -1,49 +1,36 @@
 ﻿using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Microsoft.EntityFrameworkCore;
 using Projekt_API_Models;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 {
-    public class AppointmentRepository : IBookingSystem<Appointment>, IAppointment
+    public class AppointmentRepository : IBookingSystem<Appointment>
     {
 
-        private AppDbContext _appContext;
+        private readonly AppDbContext _appContext;
 
         public AppointmentRepository(AppDbContext appContext)
         {
             _appContext = appContext;
         }
 
-        public async Task<Appointment> Add(Appointment newEntity)  
+        public async Task<Appointment> Add(Appointment appointment)
         {
-            var result = await _appContext.Appointments.AddAsync(newEntity);
+            var result = await _appContext.Appointments.AddAsync(appointment);
             await _appContext.SaveChangesAsync();
-            await AddBookingHistory(newEntity.CustomerId, "Appointment Created");
             return result.Entity;
         }
 
-        public async Task AddBookingHistory(int appointmnetId, string NameOfChange)
-        {
-            var History = new History
-            {
-                AppointmentId = appointmnetId,
-                ChangeDate = DateTime.Now,
-                ReasonToChange = NameOfChange
-            };
 
-            _appContext.History.Add(History);
-            await _appContext.SaveChangesAsync();
-        }
-
-        public async Task<Appointment> Delete(int id) 
+        public async Task<Appointment> Delete(int id)
         {
             var result = await _appContext.Appointments.FirstOrDefaultAsync(a => a.AppointmentId == id);
             if (result != null)
             {
                 _appContext.Appointments.Remove(result);
                 await _appContext.SaveChangesAsync();
-                await AddBookingHistory(id, "Appointment Deleted");
                 return result;
             }
             return null;
@@ -52,52 +39,46 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
         public async Task<IEnumerable<Appointment>> GetAll()
         {
-            return await _appContext.Appointments.Include(a => a.Customer).ToListAsync();
+            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).ToListAsync(); //lagt till "Include(a => a.Company)." behövs?
         }
 
-        public async Task<IEnumerable<Appointment>> GetAppointmentMonth(int year, int month)
-        {
-            return await _appContext.Appointments.Where(t => t.CreatingDateAppointment.Year == year && t.CreatingDateAppointment.Month == month).ToListAsync(); 
-        }
-
-        public async Task<IEnumerable<Appointment>> GetAppointmentWeek(int year, int week)
-        {
-            var appointment = await _appContext.Appointments.Where(a => a.CreatingDateAppointment.Year == year).ToListAsync();
-
-            var calendar = CultureInfo.InvariantCulture.Calendar;
-            var appointmentsInWeek = appointment.Where(a => calendar.GetWeekOfYear(a.CreatingDateAppointment, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday) == week).ToList();
-
-            return appointmentsInWeek;
-        }
-
-
-        public async Task<IEnumerable<History>> GetChangeHistory(int appointmentId)
-        {
-            return await _appContext.History.Where(h => h.AppointmentId == appointmentId).ToListAsync();
-        }
 
         public async Task<Appointment> GetSingle(int id)
         {
-           return await _appContext.Appointments.Include(a => a.Customer).FirstOrDefaultAsync(a => a.AppointmentId == id);
+            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).FirstOrDefaultAsync(a => a.AppointmentId == id); //lagt till "Include(a => a.Company)." behövs?
         }
 
 
-        public async Task<Appointment> Update(Appointment entity)
+        public async Task<Appointment> Update(Appointment appointment)
         {
-            var updateAppointment = await _appContext.Appointments.FirstOrDefaultAsync(o => o.AppointmentId == entity.AppointmentId);
+            var updateAppointment = await _appContext.Appointments.FirstOrDefaultAsync(a => a.AppointmentId == appointment.AppointmentId);
 
-            if(updateAppointment != null)
+            if (updateAppointment != null)
             {
-                updateAppointment.AppointmentDiscription = entity.AppointmentDiscription;
-                updateAppointment.CreatingDateAppointment = entity.CreatingDateAppointment;
-                updateAppointment.CustomerId = entity.CustomerId;
-                updateAppointment.CompanyId = entity.CompanyId;      
-                await AddBookingHistory(entity.CustomerId, "Appointment Updated");
+                //VAD VILL JAG ÄNDRA HÄR?
                 await _appContext.SaveChangesAsync();
                 return updateAppointment;
             }
             return null;
+
         }
 
+        public async Task<IEnumerable<Customer>> GetCustomersWithAppThisWeek()
+        {
+            var today = DateTime.Now;
+            var weekStart = today.AddDays(-(int)today.DayOfWeek);
+            var weekEnd = weekStart.AddDays(7);
+
+            return await _appContext.Appointments.Where(a => a.AppointmentTime >= weekStart && a.AppointmentTime < weekEnd).Select(a => a.Customer).Distinct().ToListAsync();
+        }
+
+        public async Task<int> GetNumerOfAppThisWeek(int customerId, int weekOfYear)
+        {
+            var year = new DateTime(DateTime.Now.Year, 1, 1);
+            var weekStart = year.AddDays((weekOfYear - 1) * 7);
+            var weekEnd = weekStart.AddDays(7);
+
+            return await _appContext.Appointments.Where(a => a.CustomerId == customerId && a.AppointmentTime >= weekStart && a.AppointmentTime < weekEnd).CountAsync();
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
         public DbSet<Company> Companies { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<History> History { get; set; }
+        public DbSet<LogInDetails> LogInDetails { get; set; }
 
 
 
@@ -33,10 +34,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
                 .WithOne(a => a.Company)
                 .HasForeignKey(a => a.CompanyId);
 
-            modelBuilder.Entity<Appointment>()
-                .HasMany(a => a.History)
-                .WithOne(a => a.Appointment)
-                .HasForeignKey(a => a.AppointmentId);
 
 
             modelBuilder.Entity<Customer>().HasData(new Customer
@@ -45,8 +42,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
                 CustomerName = "Hannes Dahlberg",
                 CustomerEmail = "Hannes@test.se",
                 CustomerPhoneNumber = "123456",
-                Login = "Hannes",
-                Password = "Password"
+
             });
 
             modelBuilder.Entity<Customer>().HasData(new Customer
@@ -55,8 +51,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
                 CustomerName = "Börje Svensson",
                 CustomerEmail = "Börje@test.se",
                 CustomerPhoneNumber = "12356887",
-                Login = "Börje",
-                Password = "Password"
+
             });
 
             modelBuilder.Entity<Customer>().HasData(new Customer
@@ -64,73 +59,153 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
                 CustomerId = 3,
                 CustomerName = "Twei Twot",
                 CustomerEmail = "Twei@test.se",
-                CustomerPhoneNumber = "456622345",
-                Login = "Twei",
-                Password = "Password"
+                CustomerPhoneNumber = "456622345"
             });
 
-            // Seed companies
+
+            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 1,
+                Username = "User1",
+                Password = "Password1",
+                Role = "User",
+                CustomerId = 1
+            });
+            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 2,
+                Username = "User2",
+                Password = "Password2",
+                Role = "User",
+                CustomerId = 2
+            });
+                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 3,
+                Username = "User3",
+                Password = "Password3",
+                Role = "User",
+                CustomerId = 3
+            });
+                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 4,
+                Username = "Company1",
+                Password = "Comp1",
+                Role = "Company",
+                CompanyId = 1
+            });
+            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 5,
+                Username = "Company2",
+                Password = "Comp2",
+                Role = "Company",
+                CompanyId = 2
+            });
+                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
+            {
+                LoginId = 6,
+                Username = "Company3",
+                Password = "Comp3",
+                Role = "Company",
+                CompanyId = 3
+            });
+
+
             modelBuilder.Entity<Company>().HasData(new Company
             {
                 CompanyId = 1,
                 CompanyName = "Paintball",
-                Login = "Comp1",
-                Password = "1234"
+
             });
 
             modelBuilder.Entity<Company>().HasData(new Company
             {
                 CompanyId = 2,
                 CompanyName = "Bowling",
-                Login = "Comp2",
-                Password = "1234"
+
             });
 
             modelBuilder.Entity<Company>().HasData(new Company
             {
                 CompanyId = 3,
                 CompanyName = "Go Cart",
-                Login = "Comp3",
-                Password = "1234"
+
             });
 
             // Seed appointments
             modelBuilder.Entity<Appointment>().HasData(new Appointment
             {
                 AppointmentId = 1,
-                AppointmentDiscription = "Just for fun",
-                CreatingDateAppointment = new DateTime(2024,05,24),
-                CompanyId = 2,
-                CustomerId = 1,
-            });
-
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
-            {
-                AppointmentId = 2,
+                AppointmentTime = DateTime.Now.AddDays(1),
                 CompanyId = 1,
                 CustomerId = 1,
-                AppointmentDiscription = "Bachelorette party",
-                CreatingDateAppointment = new DateTime(2024,05,20)
-            });
-
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
+            },
+            new Appointment
+            {
+                AppointmentId = 2,
+                AppointmentTime = DateTime.Now.AddDays(12),
+                CompanyId = 2,
+                CustomerId = 2,
+            },
+            new Appointment
             {
                 AppointmentId = 3,
+                AppointmentTime = DateTime.Now.AddDays(3),
                 CompanyId = 3,
-                CustomerId = 2,
-                AppointmentDiscription = "Teambuilding",
-                CreatingDateAppointment = new DateTime(2024,05,27)
-            });
-
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
+                CustomerId = 3,
+            },
+            new Appointment
             {
                 AppointmentId = 4,
+                AppointmentTime = DateTime.Now.AddDays(15),
+                CompanyId = 1,
+                CustomerId = 2,
+            },
+            new Appointment
+            {
+                AppointmentId = 5,
+                AppointmentTime = DateTime.Now.AddDays(5),
+                CompanyId = 2,
+                CustomerId = 3,
+            },
+            new Appointment
+            {
+                AppointmentId = 6,
+                AppointmentTime = DateTime.Now.AddDays(6),
                 CompanyId = 3,
                 CustomerId = 1,
-                AppointmentDiscription = "Teambuilding",
-                CreatingDateAppointment = new DateTime(2024,05,26)
+            },
+            new Appointment
+            {
+                AppointmentId = 7,
+                AppointmentTime = DateTime.Now.AddDays(12),
+                CompanyId = 1,
+                CustomerId = 3,
+            },
+            new Appointment
+            {
+                AppointmentId = 8,
+                AppointmentTime = DateTime.Now.AddDays(8),
+                CompanyId = 2,
+                CustomerId = 1,
+            },
+            new Appointment
+            {
+                AppointmentId = 9,
+                AppointmentTime = DateTime.Now.AddDays(9),
+                CompanyId = 3,
+                CustomerId = 2,
+            },
+            new Appointment
+            {
+                AppointmentId = 10,
+                AppointmentTime = DateTime.Now.AddDays(17),
+                CompanyId = 1,
+                CustomerId = 1,
             });
-           
+
         }
     }
 }

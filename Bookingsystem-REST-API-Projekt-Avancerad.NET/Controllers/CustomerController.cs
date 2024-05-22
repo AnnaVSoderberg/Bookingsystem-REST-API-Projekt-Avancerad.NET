@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
 using Microsoft.AspNetCore.Http;
@@ -14,44 +15,67 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
     {
         private readonly IBookingSystem<Customer> _bookingSystem;
         private readonly IMapper _mapper;
-        private readonly ICustomer _customer;
-        private readonly IAppointment _appointment;
+        private readonly AppDbContext _appDbContext;
 
 
-        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, ICustomer customer, IAppointment appointment)
+
+        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, AppDbContext appDbContext)
         {
             _bookingSystem = bookingSystem;
             _mapper = mapper;
-            _customer = customer;
-            _appointment = appointment;
+            _appDbContext = appDbContext;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllCustomers()
+        public async Task<IActionResult> GetAllCustomers(string name, string email, string phoneNumber, string sortBy = "name")
         {
             try
             {
                 var customers = await _bookingSystem.GetAll();
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    customers = customers.Where(c => c.CustomerName.Contains(name));
+                }
+
+                if (!string.IsNullOrEmpty(email))
+                {
+                    customers = customers.Where(c => c.CustomerEmail.Contains(email));
+                }
+
+                if (!string.IsNullOrEmpty(phoneNumber))
+                {
+                    customers = customers.Where(c => c.CustomerPhoneNumber == phoneNumber);
+                }
+
+                // Sortera kunder
+                customers = sortBy.ToLower() switch
+                {
+                    "name" => customers.OrderBy(c => c.CustomerName),
+                    "email" => customers.OrderBy(c => c.CustomerEmail),
+                    "phoneNumber" => customers.OrderBy(c => c.CustomerPhoneNumber),
+                    _ => customers,
+                };
+
                 var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
-                return Ok (customerDtos);
+                return Ok(customerDtos);
             }
             catch (Exception)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to retrive data from database....");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error to retrieve data from the database");
             }
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Customer>> GetACustomer(int id)
+        public async Task<ActionResult<CustomerDto>> GetACustomer(int id)
         {
             try
             {
                 var customer = await _bookingSystem.GetSingle(id);
-                if(customer == null) 
+                if (customer == null)
                 {
                     return NotFound();
-                    
+
                 }
                 var customerDto = _mapper.Map<CustomerDto>(customer);
                 return Ok(customerDto);
@@ -62,8 +86,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-        [HttpGet("CustomersAppointments/{id:int}")]
-        public async Task<ActionResult<IEnumerable<Appointment>>> GetACustomersAppointments(int id)
+        [HttpGet("ACustomersAppointments/{id:int}")]
+        public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetACustomersAppointments(int id)
         {
             try
             {
@@ -72,7 +96,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(customer.Appointments);
+                var appointmentDto = _mapper.Map<IEnumerable<AppointmentDto>>(customer.Appointments);
+                return Ok(appointmentDto);
             }
             catch (Exception)
             {
@@ -80,53 +105,26 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-        [HttpGet("Appointments/ThisWeek")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomerswithAppointmentsThisWeek()
-        {
-            try
-            {
-                var startOfWeek = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
-                var customers = await _customer.GetCustomersWithAppointmentWeek(startOfWeek);
-                if(customers == null || !customers.Any())
-                {
-                    return NotFound("No customers found with appointments this week");
-                }
-                return Ok(customers);
-            }
-            catch (Exception)
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to retrive data from database");
-            }
-
-        }
-
-        [HttpGet("{id}/numberOfAppointments/week/{startOfWeek}")]
-        public async Task<ActionResult<int>> GetCountOfACustomersAppointmentsThisWeek(int id, DateTime startOfWeek)
-        {
-           
-                var count = await _customer.GetCustomerAppointmentCountWeek(id, startOfWeek);
-                return Ok(count);
-        }
-
-        [HttpGet ("SortAndFilter")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersSortedAndFilterd(string sortField, string sortOrder, string filterField, string filterValue)
-        {
-            var customers = await _customer.GetCustomersSortedAndFiltered(sortField, sortOrder, filterField, filterValue);
-            return Ok(customers);
-        }
 
 
         [HttpPost]
-        public async Task<ActionResult<Customer>> CreatNewCustomer(Customer newCustomer)
+        public async Task<ActionResult<CustomerDto>> CreatNewCustomer(CustomerDto newCustomerDto)
         {
             try
             {
-                if(newCustomer == null)
+                if (newCustomerDto == null)
                     return BadRequest();
 
+                var newCustomer =_mapper.Map<Customer>(newCustomerDto); 
+
                 var createdCustomer = await _bookingSystem.Add(newCustomer);
-                return CreatedAtAction(nameof(GetACustomer), new { id = createdCustomer.CustomerId }, createdCustomer);
+                // Hämta den skapade kunden med alla uppdaterade fält, inklusive bokningar
+                var createdCustomerFromDb = await _bookingSystem.GetSingle(createdCustomer.CustomerId);
+                // Konvertera den skapade kunden till CustomerDto
+                var createdCustomerDto = _mapper.Map<CustomerDto>(createdCustomerFromDb);
+
+
+                return CreatedAtAction(nameof(GetACustomer), new { id = createdCustomerDto.CustomerId }, createdCustomerDto);
             }
             catch (Exception)
             {
@@ -135,40 +133,44 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
-        public async Task<ActionResult<Customer>> DeleteCustomer(int id)
+
+
+        [HttpDelete("{id:int}")] //BEHÖVER TA BORT INLOG OCH APPOINTMEENTS OCKSÅ (lägg in onCascade)
+        public async Task<ActionResult<Customer>> DeleteCustomer(int id) 
         {
             try
             {
                 var CustomerToDelete = await _bookingSystem.GetSingle(id);
-                if(CustomerToDelete == null)
+                if (CustomerToDelete == null)
                 {
                     return NotFound($"Customer with Id: {id}, was not found to delete");
                 }
-                return await _bookingSystem.Delete(id);
+                await _bookingSystem.Delete(id);
+                return Ok(CustomerToDelete);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to delete data in the database....");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
             }
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<Customer>> UpdateCustomer(int id, Customer customer)
+        public async Task<ActionResult<Customer>> UpdateCustomer(int id, CustomerDto customerDto)
         {
             try
             {
-                if(id != customer.CustomerId)
+                if (id != customerDto.CustomerId)
                 {
                     return BadRequest($"Customer with Id: {id}, does not match");
                 }
                 var customerToUpdate = await _bookingSystem.GetSingle(id);
 
-                if(customerToUpdate == null)
+                if (customerToUpdate == null)
                 {
                     return NotFound($"Customer with Id: {id} not found in database");
                 }
+                var customer = _mapper.Map<Customer>(customerDto);
                 return await _bookingSystem.Update(customer);
             }
             catch (Exception)
@@ -181,12 +183,4 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
     }
 
-    public static class DateTimeExtensions
-    {
-        public static DateTime StartOfWeek(this DateTime dt, DayOfWeek startOfWeek)
-        {
-            int diff = (7 + (dt.DayOfWeek - startOfWeek)) % 7;
-            return dt.AddDays(-diff).Date;
-        }
-    }
 }

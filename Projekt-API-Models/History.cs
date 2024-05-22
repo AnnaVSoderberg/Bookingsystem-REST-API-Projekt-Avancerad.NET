@@ -11,6 +11,8 @@ namespace Projekt_API_Models
     {
         [Key]
         public int HistoryId { get; set; }
+
+        public string Action {  get; set; }
         public DateTime ChangeDate { get; set; }
         public string ReasonToChange { get; set; }
         public int AppointmentId { get; set; }

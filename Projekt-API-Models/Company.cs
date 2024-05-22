@@ -14,10 +14,6 @@ namespace Projekt_API_Models
         [MaxLength]
         public string CompanyName { get; set; }
 
-        public string Login { get; set; }
-
-        public string Password { get; set; }
-
         //Many to one
         public ICollection<Appointment> Appointments { get; set; }
 

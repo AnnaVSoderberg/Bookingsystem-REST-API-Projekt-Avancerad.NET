@@ -14,11 +14,8 @@ namespace Projekt_API_Models
     {
         [Key]
         public int AppointmentId { get; set; }
-
-        public string AppointmentDiscription { get; set; }
-
         [Required]
-        public DateTime CreatingDateAppointment{ get; set; }
+        public DateTime AppointmentTime{ get; set; }
 
         public int CustomerId { get; set; } //FK
         //One To Many
@@ -30,8 +27,6 @@ namespace Projekt_API_Models
         //One to Many
         [JsonIgnore]
         public Company Company { get; set; }
-
-        public List<History> History { get; set; }
 
     }
 }
