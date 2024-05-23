@@ -2,6 +2,7 @@
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

@@ -3,6 +3,8 @@ using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
 using Microsoft.EntityFrameworkCore;
 using Projekt_API_Models;
+using Microsoft.AspNetCore.Authentication;
+using Bookingsystem_REST_API_Projekt_Avancerad.NET.Authentication;
 
 namespace Bookingsystem_REST_API_Projekt_Avancerad.NET
 {
@@ -13,7 +15,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -25,6 +26,11 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET
             builder.Services.AddScoped<IBookingSystem<Appointment>, AppointmentRepository>();
             builder.Services.AddScoped<IBookingSystem<Customer>, CustomerRepository>();
             builder.Services.AddScoped<IHistoryAppointment, HistoryAppointmnetRepository>();
+
+            builder.Services.AddScoped<IMyAuthenticationService, AuthenticationServiceRepository>();
+  
+            builder.Services.AddAuthentication("BasicAuthentication")
+            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
 
             builder.Services.AddControllers().AddJsonOptions(options =>
