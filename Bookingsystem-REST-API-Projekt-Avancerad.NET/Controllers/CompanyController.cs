@@ -2,6 +2,8 @@
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Projekt_API_Models;
@@ -24,6 +26,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<IActionResult> GetAllCompanies(string name, string sortBy = "name")
         {
             try
@@ -52,6 +55,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<Company>> GetCompany(int id)
         {
             try
@@ -71,6 +75,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<CompanyDto>> CreateNewCompany(CompanyDto newCompanyDto)
         {
             try
@@ -100,6 +105,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
         [HttpDelete("{id:int}")] //Kan inte ta bort om det finns bokade appointments lägga in "OnCascade" ?
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminPolicy")]
         public async Task<ActionResult<Company>> DeleteCompany(int id)
         {
             try
@@ -120,6 +126,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
         [HttpPut("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<CompanyDto>> UpdateCompany(int id, CompanyDto companyDto)
         {
             try

@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Projekt_API_Models;
 
 namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<IdentityUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -14,7 +16,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
         public DbSet<Company> Companies { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<History> History { get; set; }
-        public DbSet<LogInDetails> LogInDetails { get; set; }
 
 
 
@@ -61,57 +62,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Data
                 CustomerEmail = "Twei@test.se",
                 CustomerPhoneNumber = "456622345"
             });
-
-
-            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 1,
-                Username = "User1",
-                Password = "Password1",
-                Role = "User",
-                CustomerId = 1
-            });
-            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 2,
-                Username = "User2",
-                Password = "Password2",
-                Role = "User",
-                CustomerId = 2
-            });
-                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 3,
-                Username = "User3",
-                Password = "Password3",
-                Role = "User",
-                CustomerId = 3
-            });
-                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 4,
-                Username = "Company1",
-                Password = "Comp1",
-                Role = "Company",
-                CompanyId = 1
-            });
-            modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 5,
-                Username = "Company2",
-                Password = "Comp2",
-                Role = "Company",
-                CompanyId = 2
-            });
-                        modelBuilder.Entity<LogInDetails>().HasData(new LogInDetails
-            {
-                LoginId = 6,
-                Username = "Company3",
-                Password = "Comp3",
-                Role = "Company",
-                CompanyId = 3
-            });
-
 
             modelBuilder.Entity<Company>().HasData(new Company
             {

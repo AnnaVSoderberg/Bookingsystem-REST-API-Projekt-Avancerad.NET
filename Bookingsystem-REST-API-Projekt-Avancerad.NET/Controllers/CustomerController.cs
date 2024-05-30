@@ -2,6 +2,8 @@
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Projekt_API_Models;
@@ -27,6 +29,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<IActionResult> GetAllCustomers(string name, string email, string phoneNumber, string sortBy = "name")
         {
             try
@@ -67,6 +70,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<CustomerDto>> GetACustomer(int id)
         {
             try
@@ -87,6 +91,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet("ACustomersAppointments/{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetACustomersAppointments(int id)
         {
             try
@@ -108,6 +113,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
         [HttpPost]
+        
         public async Task<ActionResult<CustomerDto>> CreatNewCustomer(CustomerDto newCustomerDto)
         {
             try
@@ -156,6 +162,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<Customer>> UpdateCustomer(int id, CustomerDto customerDto)
         {
             try
