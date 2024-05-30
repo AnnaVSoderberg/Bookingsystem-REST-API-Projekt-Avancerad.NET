@@ -39,13 +39,13 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
         public async Task<IEnumerable<Appointment>> GetAll()
         {
-            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).ToListAsync(); //lagt till "Include(a => a.Company)." behövs?
+            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).ToListAsync(); 
         }
 
 
         public async Task<Appointment> GetSingle(int id)
         {
-            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).FirstOrDefaultAsync(a => a.AppointmentId == id); //lagt till "Include(a => a.Company)." behövs?
+            return await _appContext.Appointments.Include(a => a.Customer).Include(a => a.Company).FirstOrDefaultAsync(a => a.AppointmentId == id); 
         }
 
 
@@ -55,7 +55,10 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
             if (updateAppointment != null)
             {
-                //VAD VILL JAG ÄNDRA HÄR?
+                updateAppointment.AppointmentTime = appointment.AppointmentTime;
+                updateAppointment.CustomerId = appointment.CustomerId;
+                updateAppointment.CompanyId = appointment.CompanyId;
+                
                 await _appContext.SaveChangesAsync();
                 return updateAppointment;
             }

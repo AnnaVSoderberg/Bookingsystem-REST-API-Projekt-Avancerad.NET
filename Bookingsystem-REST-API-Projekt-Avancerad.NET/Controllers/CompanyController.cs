@@ -104,8 +104,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
 
-        [HttpDelete("{id:int}")] //Kan inte ta bort om det finns bokade appointments lägga in "OnCascade" ?
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminPolicy")]
+        [HttpDelete("{id:int}")] //Kan inte ta bort om det finns bokade appointments
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<Company>> DeleteCompany(int id)
         {
             try
@@ -119,7 +119,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}\n Can't delete company with bookings");
             }
         }
 

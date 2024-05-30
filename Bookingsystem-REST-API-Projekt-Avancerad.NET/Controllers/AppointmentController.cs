@@ -2,6 +2,7 @@
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Data;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto;
 using Bookingsystem_REST_API_Projekt_Avancerad.NET.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,8 +34,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             _appDbContext = appDbContext;
         }
 
-
         [HttpGet]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<IActionResult> GetAllAppointments(string customerName, string companyName, DateTime? appointmentTime, string sortBy = "appointmentTime")
         {
             try
@@ -75,6 +76,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyUserPolicy")]
         public async Task<ActionResult<AppointmentDto>> GetAnAppointment(int id)
         {
             try
@@ -93,9 +95,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-
-
         [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyUserPolicy")]
         public async Task<ActionResult<AppointmentDto>> CreateNewAppointment(AppointmentDto appointmentDto)
         {
             try
@@ -105,8 +106,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                     return BadRequest();
                 }
 
-                var newAppointment = _mapper.Map<Appointment>(appointmentDto); // Konvertera AppointmentDto till Appointment
-
+                var newAppointment = _mapper.Map<Appointment>(appointmentDto);
 
                 // Kontrollera om kunden redan finns
                 if (newAppointment.CustomerId != 0)
@@ -130,36 +130,38 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                     newAppointment.Company = existingCompany;
                 }
 
-
                 var createdAppointment = await _bookingSystemAppointment.Add(newAppointment);
 
-                // Logga skapandet av bokningen
-                var history = new History
+                try
                 {
-                    AppointmentId = createdAppointment.AppointmentId,
-                    Action = "Created",
-                    ReasonToChange = "Appointment created",
-                    ChangeDate = DateTime.UtcNow
-                };
-                await _historyAppointment.Add(history);
-                await _appDbContext.SaveChangesAsync(); 
+                    var history = new History
+                    {
+                        AppointmentId = createdAppointment.AppointmentId,
+                        Action = "Created",
+                        ReasonToChange = "Appointment created",
+                        ChangeDate = DateTime.UtcNow
+                    };
+                    await _historyAppointment.Add(history);
+                    Console.WriteLine($"History logged successfully for appointment creation with ID {createdAppointment.AppointmentId}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error occurred while logging history for appointment creation: {ex.Message}");
+                }
 
-                var createdAppointmentFromDb = await _bookingSystemAppointment.GetSingle(createdAppointment.AppointmentId); 
-
-                
+                var createdAppointmentFromDb = await _bookingSystemAppointment.GetSingle(createdAppointment.AppointmentId);
                 var createdAppointmentDto = _mapper.Map<AppointmentDto>(createdAppointmentFromDb);
 
                 return CreatedAtAction(nameof(GetAnAppointment), new { id = createdAppointmentDto.AppointmentId }, createdAppointmentDto);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to post data to database");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to post data to database: {ex.Message}");
             }
         }
 
-
-
-        [HttpDelete("{id:int}")]  //Fungerar inte ändra till Cascade delete i database eller Soft delet med extra kolumn. 
+        [HttpDelete("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyUserPolicy")]
         public async Task<ActionResult<Appointment>> DeleteAppointment(int id)
         {
             try
@@ -170,31 +172,35 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                     return NotFound($"Appointment with ID {id} not found.");
                 }
 
-
                 var deletedAppointment = await _bookingSystemAppointment.Delete(appointmentToDelete.AppointmentId);
 
-  
-                var history = new History
+                try
                 {
-                    AppointmentId = deletedAppointment.AppointmentId,
-                    Action = "Deleted",
-                    ReasonToChange = "Appointment deleted",
-                    ChangeDate = DateTime.Now
-                };
-                await _historyAppointment.Add(history);
+                    var history = new History
+                    {
+                        AppointmentId = deletedAppointment.AppointmentId,
+                        Action = "Deleted",
+                        ReasonToChange = "Appointment deleted",
+                        ChangeDate = DateTime.Now
+                    };
+                    await _historyAppointment.Add(history);
+                    Console.WriteLine($"History logged successfully for appointment deletion with ID {deletedAppointment.AppointmentId}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error occurred while logging history for appointment deletion: {ex.Message}");
+                }
 
                 return Ok(deletedAppointment);
             }
             catch (Exception ex)
             {
-
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
             }
         }
 
-
-
         [HttpPut("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyUserPolicy")]
         public async Task<ActionResult<Appointment>> UpdateAppointment(int id, [FromBody] Appointment appointment)
         {
             try
@@ -218,29 +224,36 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 // Uppdatera bokningen i databasen
                 await _bookingSystemAppointment.Update(appointmentToUpdate);
 
-                // Logga uppdateringen
-                var history = new History
+                try
                 {
-                    AppointmentId = appointmentToUpdate.AppointmentId,
-                    Action = "Updated",
-                    ReasonToChange = "Appointment updated",
-                    ChangeDate = DateTime.Now
-                };
-                await _historyAppointment.Add(history);
+                    var history = new History
+                    {
+                        AppointmentId = appointmentToUpdate.AppointmentId,
+                        Action = "Updated",
+                        ReasonToChange = "Appointment updated",
+                        ChangeDate = DateTime.Now
+                    };
+                    await _historyAppointment.Add(history);
+                    Console.WriteLine($"History logged successfully for appointment update with ID {appointmentToUpdate.AppointmentId}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error occurred while logging history for appointment update: {ex.Message}");
+                }
 
                 // Hämta den uppdaterade bokningen
                 var updatedAppointment = await _bookingSystemAppointment.GetSingle(appointmentToUpdate.AppointmentId);
 
                 return Ok(updatedAppointment);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error updating data in the database");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error updating data in the database: {ex.Message}");
             }
         }
 
-
         [HttpGet("week/{year}/{week}/{companyId}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetAppointmentsByWeek(int year, int week, int companyId)
         {
             try
@@ -262,14 +275,14 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
                 return Ok(appointmentDtos);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving data from the database");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
             }
         }
 
-
         [HttpGet("month/{year}/{month}/{companyId}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetAppointmentsByMonth(int year, int month, int companyId)
         {
             try
@@ -291,9 +304,9 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
                 return Ok(appointmentDtos);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving data from the database");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
             }
         }
 
@@ -313,6 +326,5 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             var result = firstThursday.AddDays(weekNum * 7);
             return result.AddDays(-3);
         }
-
     }
 }

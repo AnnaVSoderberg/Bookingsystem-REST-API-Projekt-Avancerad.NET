@@ -18,14 +18,16 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         private readonly IBookingSystem<Customer> _bookingSystem;
         private readonly IMapper _mapper;
         private readonly AppDbContext _appDbContext;
+        private readonly IHistoryAppointment _historyAppointment;
 
 
 
-        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, AppDbContext appDbContext)
+        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, AppDbContext appDbContext, IHistoryAppointment historyAppointment)
         {
             _bookingSystem = bookingSystem;
             _mapper = mapper;
             _appDbContext = appDbContext;
+            _historyAppointment = historyAppointment;
         }
 
         [HttpGet]
@@ -113,55 +115,59 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
         [HttpPost]
-        
-        public async Task<ActionResult<CustomerDto>> CreatNewCustomer(CustomerDto newCustomerDto)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
+        public async Task<ActionResult<CustomerDto>> CreateNewCustomer(CustomerDto newCustomerDto)
         {
             try
             {
                 if (newCustomerDto == null)
-                    return BadRequest();
+                    return BadRequest("Customer data is null.");
 
-                var newCustomer =_mapper.Map<Customer>(newCustomerDto); 
+                Console.WriteLine("Creating a new customer");
 
+                var newCustomer = _mapper.Map<Customer>(newCustomerDto);
                 var createdCustomer = await _bookingSystem.Add(newCustomer);
-                // Hämta den skapade kunden med alla uppdaterade fält, inklusive bokningar
                 var createdCustomerFromDb = await _bookingSystem.GetSingle(createdCustomer.CustomerId);
-                // Konvertera den skapade kunden till CustomerDto
                 var createdCustomerDto = _mapper.Map<CustomerDto>(createdCustomerFromDb);
-
 
                 return CreatedAtAction(nameof(GetACustomer), new { id = createdCustomerDto.CustomerId }, createdCustomerDto);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to create data in to the database");
+                Console.WriteLine($"Error occurred while creating a new customer: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to create data in to the database: {ex.Message}");
             }
         }
 
 
-
-        [HttpDelete("{id:int}")] //BEHÖVER TA BORT INLOG OCH APPOINTMEENTS OCKSÅ (lägg in onCascade)
-        public async Task<ActionResult<Customer>> DeleteCustomer(int id) 
+        [HttpDelete("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminPolicy")]
+        public async Task<ActionResult<Customer>> DeleteCustomer(int id)
         {
             try
             {
+                Console.WriteLine($"Deleting customer with ID {id}");
+
                 var CustomerToDelete = await _bookingSystem.GetSingle(id);
                 if (CustomerToDelete == null)
                 {
                     return NotFound($"Customer with Id: {id}, was not found to delete");
                 }
                 await _bookingSystem.Delete(id);
+
+
                 return Ok(CustomerToDelete);
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine($"Error occurred while deleting customer with ID {id}: {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error to delete data in the database: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
             }
         }
 
+
         [HttpPut("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<Customer>> UpdateCustomer(int id, CustomerDto customerDto)
         {
@@ -171,21 +177,26 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 {
                     return BadRequest($"Customer with Id: {id}, does not match");
                 }
-                var customerToUpdate = await _bookingSystem.GetSingle(id);
 
+                Console.WriteLine($"Updating customer with ID {id}");
+
+                var customerToUpdate = await _bookingSystem.GetSingle(id);
                 if (customerToUpdate == null)
                 {
                     return NotFound($"Customer with Id: {id} not found in database");
                 }
+
                 var customer = _mapper.Map<Customer>(customerDto);
-                return await _bookingSystem.Update(customer);
+                var updatedCustomer = await _bookingSystem.Update(customer);
+
+
+                return Ok(updatedCustomer);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error to update data in the database....");
+                Console.WriteLine($"Error occurred while updating customer with ID {id}: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error to update data in the database: {ex.Message}");
             }
-
         }
 
     }
