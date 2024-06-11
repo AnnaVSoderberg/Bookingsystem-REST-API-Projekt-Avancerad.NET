@@ -10,8 +10,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Dto
         public string CustomerName { get; set; }
         public string CustomerEmail { get; set; }
         public string CustomerPhoneNumber { get; set; }
-        ////Many to One
-        //public ICollection<Appointment> Appointments { get; set; }
 
     }
 }

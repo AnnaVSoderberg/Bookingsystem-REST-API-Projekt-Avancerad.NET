@@ -104,7 +104,7 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
 
-        [HttpDelete("{id:int}")] //Kan inte ta bort om det finns bokade appointments
+        [HttpDelete("{id:int}")] 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
         public async Task<ActionResult<Company>> DeleteCompany(int id)
         {

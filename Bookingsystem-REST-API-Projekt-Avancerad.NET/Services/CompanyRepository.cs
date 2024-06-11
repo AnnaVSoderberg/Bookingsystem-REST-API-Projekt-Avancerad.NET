@@ -37,12 +37,12 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
         public async Task<IEnumerable<Company>> GetAll()
         {
-            return await _appContext.Companies.Include(c => c.Appointments).ToListAsync(); //Lagt till "Include(c => c.Appointments)." behövs??
+            return await _appContext.Companies.Include(c => c.Appointments).ToListAsync(); 
         }
 
         public async Task<Company> GetSingle(int id)
         {
-            return await _appContext.Companies.Include(c => c.Appointments).FirstOrDefaultAsync(c => c.CompanyId == id); ////Lagt till "Include(c => c.Appointments)." behövs??
+            return await _appContext.Companies.Include(c => c.Appointments).FirstOrDefaultAsync(c => c.CompanyId == id); 
         }
 
 

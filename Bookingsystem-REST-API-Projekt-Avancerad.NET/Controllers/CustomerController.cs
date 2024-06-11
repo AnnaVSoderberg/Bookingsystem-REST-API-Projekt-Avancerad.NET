@@ -19,15 +19,17 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         private readonly IMapper _mapper;
         private readonly AppDbContext _appDbContext;
         private readonly IHistoryAppointment _historyAppointment;
+        private readonly IBookingSystem<Company> _company;
 
 
 
-        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, AppDbContext appDbContext, IHistoryAppointment historyAppointment)
+        public CustomerController(IBookingSystem<Customer> bookingSystem, IMapper mapper, AppDbContext appDbContext, IHistoryAppointment historyAppointment, IBookingSystem<Company> company)
         {
             _bookingSystem = bookingSystem;
             _mapper = mapper;
             _appDbContext = appDbContext;
             _historyAppointment = historyAppointment;
+            _company = company;
         }
 
         [HttpGet]
@@ -112,8 +114,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
         }
 
-
-
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<CustomerDto>> CreateNewCustomer(CustomerDto newCustomerDto)
@@ -167,7 +167,6 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
 
 
         [HttpPut("{id:int}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminUserPolicy")]
         public async Task<ActionResult<Customer>> UpdateCustomer(int id, CustomerDto customerDto)
         {

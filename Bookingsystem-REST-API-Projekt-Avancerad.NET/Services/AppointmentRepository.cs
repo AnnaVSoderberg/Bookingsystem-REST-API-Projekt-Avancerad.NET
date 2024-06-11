@@ -66,22 +66,5 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Services
 
         }
 
-        public async Task<IEnumerable<Customer>> GetCustomersWithAppThisWeek()
-        {
-            var today = DateTime.Now;
-            var weekStart = today.AddDays(-(int)today.DayOfWeek);
-            var weekEnd = weekStart.AddDays(7);
-
-            return await _appContext.Appointments.Where(a => a.AppointmentTime >= weekStart && a.AppointmentTime < weekEnd).Select(a => a.Customer).Distinct().ToListAsync();
-        }
-
-        public async Task<int> GetNumerOfAppThisWeek(int customerId, int weekOfYear)
-        {
-            var year = new DateTime(DateTime.Now.Year, 1, 1);
-            var weekStart = year.AddDays((weekOfYear - 1) * 7);
-            var weekEnd = weekStart.AddDays(7);
-
-            return await _appContext.Appointments.Where(a => a.CustomerId == customerId && a.AppointmentTime >= weekStart && a.AppointmentTime < weekEnd).CountAsync();
-        }
     }
 }

@@ -61,8 +61,8 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 appointments = sortBy.ToLower() switch
                 {
                     "appointmentTime" => appointments.OrderByDescending(a => a.AppointmentTime),
-                    "customerName" => appointments.OrderBy(a => a.Customer.CustomerName),
-                    "companyName" => appointments.OrderBy(a => a.Company.CompanyName),
+                    "customerName" => appointments.OrderByDescending(a => a.Customer.CustomerName),
+                    "companyName" => appointments.OrderByDescending(a => a.Company.CompanyName),
                     _ => appointments,
                 };
 
@@ -216,12 +216,11 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                     return NotFound($"Appointment with ID {id} not found.");
                 }
 
-                // Uppdatera befintlig bokning med data från inkommande objekt
                 appointmentToUpdate.AppointmentTime = appointment.AppointmentTime;
                 appointmentToUpdate.CustomerId = appointment.CustomerId;
                 appointmentToUpdate.CompanyId = appointment.CompanyId;
 
-                // Uppdatera bokningen i databasen
+
                 await _bookingSystemAppointment.Update(appointmentToUpdate);
 
                 try
@@ -258,11 +257,10 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         {
             try
             {
-                // Beräkna den första och sista dagen av veckan
+               
                 DateTime startOfWeek = FirstDateOfWeek(year, week);
                 DateTime endOfWeek = startOfWeek.AddDays(7);
 
-                // Hämta alla möten
                 var appointments = await _bookingSystemAppointment.GetAll();
 
                 // Filtrera mötena baserat på veckan och företaget
@@ -287,19 +285,15 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
         {
             try
             {
-                // Beräkna den första och sista dagen av månaden
                 DateTime startOfMonth = new DateTime(year, month, 1);
                 DateTime endOfMonth = startOfMonth.AddMonths(1).AddTicks(-1);
 
-                // Hämta alla möten
                 var appointments = await _bookingSystemAppointment.GetAll();
 
-                // Filtrera mötena baserat på månaden och företaget
                 var monthlyAppointments = appointments
                     .Where(a => a.AppointmentTime >= startOfMonth && a.AppointmentTime <= endOfMonth && a.CompanyId == companyId)
                     .ToList();
 
-                // Konvertera till DTOs
                 var appointmentDtos = _mapper.Map<List<AppointmentDto>>(monthlyAppointments);
 
                 return Ok(appointmentDtos);
@@ -309,6 +303,58 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
             }
         }
+
+        [HttpGet("currentWeekCustomers")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersWithBookingsInCurrentWeek()
+        {
+            try
+            {
+                DateTime startOfWeek = FirstDateOfWeek(DateTime.Now.Year, GetWeekOfYear(DateTime.Now));
+                DateTime endOfWeek = startOfWeek.AddDays(7);
+
+                var appointments = await _bookingSystemAppointment.GetAll();
+                var currentWeekAppointments = appointments
+                    .Where(a => a.AppointmentTime >= startOfWeek && a.AppointmentTime < endOfWeek)
+                    .ToList();
+
+                var uniqueCustomers = currentWeekAppointments
+                    .Select(a => a.Customer)
+                    .Distinct()
+                    .ToList();
+
+                var customerDtos = _mapper.Map<List<CustomerDto>>(uniqueCustomers);
+                return Ok(customerDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
+            }
+        }
+
+        [HttpGet("customer/{customerId}/week/{year}/{week}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminCompanyPolicy")]
+        public async Task<ActionResult<int>> GetNumberOfBookingsForCustomerInWeek(int customerId, int year, int week)
+        {
+            try
+            {
+                DateTime startOfWeek = FirstDateOfWeek(year, week);
+                DateTime endOfWeek = startOfWeek.AddDays(7);
+
+                var appointments = await _bookingSystemAppointment.GetAll();
+                var customerAppointments = appointments
+                    .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfWeek && a.AppointmentTime < endOfWeek)
+                    .Count();
+
+                return Ok(customerAppointments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
+            }
+        }
+
+
 
         // Hjälpmetod för att beräkna den första dagen av en viss vecka
         private static DateTime FirstDateOfWeek(int year, int weekOfYear)
@@ -325,6 +371,11 @@ namespace Bookingsystem_REST_API_Projekt_Avancerad.NET.Controllers
             }
             var result = firstThursday.AddDays(weekNum * 7);
             return result.AddDays(-3);
+        }
+        private static int GetWeekOfYear(DateTime date)
+        {
+            var cal = CultureInfo.CurrentCulture.Calendar;
+            return cal.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
         }
     }
 }
